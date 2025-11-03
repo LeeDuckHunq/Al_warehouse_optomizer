@@ -1,0 +1,5 @@
+{
+  "name": "AI Warehouse Optimizer",
+  "description": "An AI-powered application to solve the Storage Location Assignment Problem (SLAP) in smart warehouses by calculating priority scores for SKUs and suggesting optimal storage locations to minimize travel time and improve efficiency.",
+  "requestFramePermissions": []
+}
