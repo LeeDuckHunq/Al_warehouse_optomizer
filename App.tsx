@@ -91,42 +91,25 @@ const App: React.FC = () => {
   
   const parsePlacements = (resultText: string, currentSkus: Sku[]): Placement[] => {
     const placements: Placement[] = [];
-    const lines = resultText.split('\n');
-    const locationRegex = /([A-D]-[1-5]-S[1-4]-T[1-7])/;
+    const regex = /SKU\s*['"]([^'"]+)['"].*?([A-D]-[1-5]-S[1-4]-T[1-7])/g;
     
-    const unplacedSkus = [...currentSkus];
-
-    for (const line of lines) {
-        const locationMatch = line.match(locationRegex);
-        if (locationMatch) {
-            const location = locationMatch[0];
-            let bestMatchSku: Sku | null = null;
-            let longestMatchLength = 0;
-
-            // Find the best matching (longest) SKU name in the same line
-            for (let i = unplacedSkus.length - 1; i >= 0; i--) {
-                const sku = unplacedSkus[i];
-                // Escape special regex characters in the name for safe matching
-                const skuNameRegex = new RegExp(sku.name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), "i");
-                if (skuNameRegex.test(line) && sku.name.length > longestMatchLength) {
-                     bestMatchSku = sku;
-                     longestMatchLength = sku.name.length;
-                }
-            }
-
-            if (bestMatchSku) {
-                placements.push({ sku: bestMatchSku, location });
-                // Remove the placed SKU to prevent it from being matched again
-                const indexToRemove = unplacedSkus.findIndex(s => s.id === bestMatchSku!.id);
-                if (indexToRemove > -1) {
-                    unplacedSkus.splice(indexToRemove, 1);
-                }
-            }
+    let match;
+    while ((match = regex.exec(resultText)) !== null) {
+        const [, skuName, location] = match;
+        const trimmedSkuName = skuName.trim();
+        const sku = currentSkus.find(s => s.name.trim() === trimmedSkuName);
+        
+        if (sku) {
+             if (!placements.some(p => p.sku.id === sku.id)) {
+                placements.push({ sku, location });
+             }
+        } else {
+            console.warn(`Could not find a matching SKU for name: "${trimmedSkuName}"`);
         }
     }
-    
+
     if (placements.length < currentSkus.length && placements.length > 0) {
-        console.warn(`Parser found placements for ${placements.length} of ${currentSkus.length} SKUs. The AI response might be incomplete or malformed.`);
+        console.warn("Parser found placements for some but not all SKUs. The AI response might be incomplete or malformed.");
     }
     
     return placements;
